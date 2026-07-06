@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极兔在线供应商得分系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #e60012 0%, #c40010 100%);
+            padding: 20px 40px;
+            box-shadow: 0 4px 15px rgba(230, 0, 18, 0.3);
+        }
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logo-circle {
+            width: 55px;
+            height: 55px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            font-weight: bold;
+            color: #e60012;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .logo-text {
+            color: white;
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 3px;
+        }
+        .logo-sub {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 13px;
+            letter-spacing: 2px;
+        }
+        .main-content {
+            max-width: 1600px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        .upload-section {
+            background: white;
+            border-radius: 16px;
+            padding: 45px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+        .upload-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .upload-title::before {
+            content: '';
+            width: 4px;
+            height: 22px;
+            background: #e60012;
+            border-radius: 2px;
+        }
+        .upload-area {
+            border: 3px dashed #d9d9d9;
+            border-radius: 16px;
+            padding: 60px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #fafafa;
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #e60012;
+            background: #fff5f5;
+            transform: translateY(-2px);
+        }
+        .upload-icon {
+            font-size: 56px;
+            color: #e60012;
+            margin-bottom: 20px;
+        }
+        .upload-text {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        .upload-hint {
+            font-size: 14px;
+            color: #999;
+            line-height: 1.6;
+        }
+        #fileInput {
+            display: none;
+        }
+        .btn {
+            background: linear-gradient(135deg, #e60012 0%, #c40010 100%);
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 25px;
+            box-shadow: 0 4px 12px rgba(230, 0, 18, 0.3);
+        }
+        .btn:hover {
+            background: linear-gradient(135deg, #c40010 0%, #a0000c 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(230, 0, 18, 0.4);
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-small {
+            background: #f0f0f0;
+            color: #666;
+            padding: 6px 12px;
+            font-size: 12px;
+            margin-top: 0;
+            box-shadow: none;
+        }
+        .btn-small:hover {
+            background: #e0e0e0;
+            color: #333;
+        }
+        .file-list {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fafafa;
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .file-name {
+            font-size: 13px;
+            color: #333;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .file-type {
+            font-size: 12px;
+            color: #999;
+            margin-left: 10px;
+        }
+        .results-section {
+            display: none;
+        }
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-bottom: 35px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 14px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+            border-left: 6px solid #e60012;
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+        }
+        .stat-value.red { color: #e60012; }
+        .stat-value.green { color: #00b42a; }
+        .stat-value.blue { color: #1890ff; }
+        .table-container {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        .table-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 22px 25px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .table-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%);
+            padding: 12px 8px;
+            text-align: center;
+            font-size: 11px;
+            color: #555;
+            font-weight: bold;
+            border-bottom: 2px solid #e0e0e0;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td {
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 11px;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        tr:hover {
+            background: #fafafa;
+        }
+        tr:nth-child(even) {
+            background: #fcfcfc;
+        }
+        tr:nth-child(even):hover {
+            background: #f5f5f5;
+        }
+        .score-high { color: #00b42a; font-weight: bold; font-size: 12px; }
+        .score-medium { color: #fa8c16; font-weight: bold; font-size: 12px; }
+        .score-low { color: #e60012; font-weight: bold; font-size: 12px; }
+        .channel-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .channel-tag.special { background: #e60012; color: white; }
+        .channel-tag.normal { background: #e0e0e0; color: #666; }
+        .channel-tag.visitor { background: #7b1fa2; color: white; }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+        .modal {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 950px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 35px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e60012;
+        }
+        .close-btn {
+            float: right;
+            font-size: 28px;
+            color: #999;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .close-btn:hover { color: #e60012; }
+        .rule-section {
+            margin-bottom: 25px;
+        }
+        .rule-section h4 {
+            font-size: 16px;
+            color: #e60012;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .rule-section h4::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #e60012;
+            border-radius: 50%;
+        }
+        .rule-section p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+        .rule-section ul {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.8;
+            padding-left: 25px;
+        }
+        .rule-table {
+            width: 100%;
+            margin-bottom: 20px;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .rule-table th {
+            background: #fff5f5;
+            color: #e60012;
+            padding: 10px;
+            text-align: center;
+        }
+        .rule-table td {
+            padding: 8px 10px;
+            text-align: center;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .footer {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 13px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            color: #e60012;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #e60012;
+            border-top-color: transparent;
+            border-radius: 50%;
+            margin-left: 10px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-circle">J&T</div>
+                <div>
+                    <div class="logo-text">极兔速递</div>
+                    <div class="logo-sub">J&T EXPRESS</div>
+                </div>
+            </div>
+            <div style="color: white; font-size: 16px; font-weight: 500;">在线供应商考核得分系统</div>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="upload-section">
+            <div class="upload-title">数据上传</div>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📊</div>
+                <div class="upload-text">点击或拖拽上传Excel文件（支持多文件）</div>
+                <div class="upload-hint">支持 .xlsx / .xls 格式文件<br>访客子渠道（支付宝小程序、百度小程序、官网、微信）将自动合并为"访客"渠道</div>
+            </div>
+            <input type="file" id="fileInput" accept=".xlsx, .xls" multiple>
+            <div class="file-list" id="fileList" style="display: none;"></div>
+            <button class="btn" id="calculateBtn" disabled>开始计算得分</button>
+            <div class="loading" id="loading">正在计算中，请稍候</div>
+        </div>
+        
+        <div class="results-section" id="resultsSection">
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-label">供应商总数</div>
+                    <div class="stat-value red" id="totalSuppliers">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">平均得分</div>
+                    <div class="stat-value blue" id="avgScore">0.00</div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">供应商得分汇总（按服务商均分排名）</div>
+                    <button class="btn" style="margin-top: 0; font-size: 13px; padding: 10px 25px;" onclick="showRules()">考核规则说明</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>服务商</th>
+                                <th>渠道</th>
+                                <th>渠道类型</th>
+                                <th>成功接待率</th>
+                                <th>加权后</th>
+                                <th>成功接待得分</th>
+                                <th>30s响应率</th>
+                                <th>响应得分</th>
+                                <th>不满意率</th>
+                                <th>加权后</th>
+                                <th>不满意得分</th>
+                                <th>72H FCR</th>
+                                <th>加权后</th>
+                                <th>FCR得分</th>
+                                <th>质检分</th>
+                                <th>综合得分</th>
+                                <th>供应商总分</th>
+                                <th>排名</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">服务商均分排名汇总</div>
+                </div>
+                <table id="summaryTable">
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th>服务商名称</th>
+                            <th>服务渠道数</th>
+                            <th>平均得分</th>
+                            <th>最高得分</th>
+                            <th>最低得分</th>
+                            <th>达标率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="rulesModal">
+        <div class="modal">
+            <span class="close-btn" onclick="closeRules()">&times;</span>
+            <div class="modal-title">考核规则说明</div>
+            
+            <div class="rule-section">
+                <h4>一、核心规则总述</h4>
+                <p><strong>加权逻辑：</strong>所有指标的「加权后数值 = 指标原始值 × 对应渠道的系数」，计分环节均使用加权后数值计算；系数表中「-」代表系数为 1.0</p>
+                <p><strong>渠道分类：</strong></p>
+                <ul>
+                    <li><strong>特殊规则渠道：</strong>淘天-正向、菜鸟-七星潭、逍遥峰-KS（成功接待率不考核固定0分，FCR满分15分）</li>
+                    <li><strong>通用规则渠道：</strong>除上述3个渠道外的其余所有渠道（成功接待率正常计分，FCR满分10分）</li>
+                </ul>
+                <p><strong>总分构成：</strong>单渠道总分 = 成功接待率得分 + 不满意率得分 + 30s响应率得分 + 72hFCR得分 + 20分质检分</p>
+            </div>
+            
+            <div class="rule-section">
+                <h4>二、分渠道加权系数明细</h4>
+                <table class="rule-table">
+                    <tr><th>渠道名称</th><th>成功接待率系数</th><th>不满意率系数</th><th>72hFCR系数</th><th>30s响应率系数</th></tr>
+                    <tr><td>淘天-正向</td><td>1.0（-）</td><td>1.00</td><td>1.17</td><td>1.00</td></tr>
+                    <tr><td>菜鸟-七星潭</td><td>1.0（-）</td><td>1.00</td><td>1.19</td><td>1.00</td></tr>
+                    <tr><td>逍遥峰-KS</td><td>1.0（-）</td><td>0.56</td><td>1.25</td><td>1.00</td></tr>
+                    <tr><td>小红书-Red</td><td>1.03</td><td>1.00</td><td>1.16</td><td>1.00</td></tr>
+                    <tr><td>极地湾-JD</td><td>1.00</td><td>0.82</td><td>1.02</td><td>1.00</td></tr>
+                    <tr><td>紫金山-逆向</td><td>1.00</td><td>0.96</td><td>1.05</td><td>1.00</td></tr>
+                    <tr><td>抖音-紫金山</td><td>1.02</td><td>1.00</td><td>1.05</td><td>1.00</td></tr>
+                    <tr><td>桃花岛-逆向</td><td>1.03</td><td>0.34</td><td>1.08</td><td>1.00</td></tr>
+                    <tr><td>桃花岛-正向</td><td>1.00</td><td>0.94</td><td>1.03</td><td>1.00</td></tr>
+                    <tr><td>CaiNiao群聊</td><td>1.01</td><td>0.47</td><td>1.00</td><td>1.00</td></tr>
+                    <tr><td>访客</td><td>1.00</td><td>1.00</td><td>1.38</td><td>1.00</td></tr>
+                    <tr><td>微信小店-正向</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+                    <tr><td>微信小店-逆向</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+                    <tr><td>百度优选</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+                </table>
+            </div>
+            
+            <div class="rule-section">
+                <h4>三、单项指标计分规则</h4>
+                <h5 style="color: #333; margin-bottom: 10px;">（一）特殊规则渠道（淘天-正向、菜鸟-七星潭、逍遥峰-KS）</h5>
+                <ul>
+                    <li><strong>成功接待率：</strong>不考核，固定得0分</li>
+                    <li><strong>不满意率（满分60分，逆向计分）：</strong>&lt;15%得60分，15%-30%线性折算，&gt;30%得0分</li>
+                    <li><strong>30s响应率（满分5分）：</strong>&lt;60%得0分，60%-85%线性折算，&gt;85%得5分</li>
+                    <li><strong>72hFCR（满分15分）：</strong>&lt;60%得0分，60%-75%线性折算，&gt;75%得15分</li>
+                </ul>
+                <h5 style="color: #333; margin-bottom: 10px; margin-top: 15px;">（二）通用规则渠道</h5>
+                <ul>
+                    <li><strong>成功接待率（满分5分）：</strong>&lt;90%得0分，90%-96%线性折算，&gt;96%得5分</li>
+                    <li><strong>不满意率（满分60分，逆向计分）：</strong>&lt;15%得60分，15%-30%线性折算，&gt;30%得0分</li>
+                    <li><strong>30s响应率（满分5分）：</strong>&lt;60%得0分，60%-85%线性折算，&gt;85%得5分</li>
+                    <li><strong>72hFCR（满分10分）：</strong>&lt;60%得0分，60%-75%线性折算，&gt;75%得10分</li>
+                </ul>
+            </div>
+            
+            <div class="rule-section">
+                <h4>四、结算规则</h4>
+                <p><strong>85分及以上：</strong>原价计费（100%结算）</p>
+                <p><strong>低于85分：</strong>按比例结算（得分即结算比例）</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <div>J&T EXPRESS 极兔速递 · 在线供应商考核得分系统</div>
+        <div style="margin-top: 8px;">版本：V4.0 | 数据仅供参考</div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const loading = document.getElementById('loading');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsBody = document.getElementById('resultsBody');
+        const summaryBody = document.getElementById('summaryBody');
+        const fileList = document.getElementById('fileList');
+        const rulesModal = document.getElementById('rulesModal');
+        
+        let uploadedFiles = [];
+        let allResults = [];
+        
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const newFiles = Array.from(e.dataTransfer.files).filter(f => f.name.match(/\.(xlsx|xls)$/i));
+            addFiles(newFiles);
+        });
+        fileInput.addEventListener('change', (e) => {
+            const newFiles = Array.from(e.target.files);
+            addFiles(newFiles);
+        });
+        
+        function addFiles(files) {
+            files.forEach(file => {
+                if (!uploadedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    uploadedFiles.push(file);
+                }
+            });
+            updateFileList();
+            calculateBtn.disabled = uploadedFiles.length === 0;
+        }
+        
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            updateFileList();
+            calculateBtn.disabled = uploadedFiles.length === 0;
+        }
+        
+        function updateFileList() {
+            if (uploadedFiles.length === 0) {
+                fileList.style.display = 'none';
+                uploadArea.innerHTML = `<div class="upload-icon">📊</div><div class="upload-text">点击或拖拽上传Excel文件（支持多文件）</div><div class="upload-hint">支持 .xlsx / .xls 格式文件<br>访客数据请单独上传，系统自动取总计行数据</div>`;
+                return;
+            }
+            fileList.style.display = 'block';
+            uploadArea.innerHTML = `<div class="upload-icon">✓</div><div class="upload-text" style="color: #e60012;">已选择 ${uploadedFiles.length} 个文件</div>`;
+            let html = '';
+            uploadedFiles.forEach((file, index) => {
+                html += `<div class="file-item">
+                    <div>
+                        <span class="file-name">${file.name}</span>
+                        <span class="file-type">${(file.size / 1024).toFixed(0)} KB</span>
+                    </div>
+                    <button class="btn btn-small" onclick="removeFile(${index})">删除</button>
+                </div>`;
+            });
+            fileList.innerHTML = html;
+        }
+        
+        calculateBtn.addEventListener('click', () => {
+            if (uploadedFiles.length === 0) return;
+            loading.style.display = 'block';
+            calculateBtn.disabled = true;
+            
+            Promise.all(uploadedFiles.map(readFile))
+                .then(allData => {
+                    const mergedData = allData.flat();
+                    processData(mergedData);
+                })
+                .catch(error => {
+                    alert('文件读取失败，请确保上传的是有效的Excel文件');
+                })
+                .finally(() => {
+                    loading.style.display = 'none';
+                    calculateBtn.disabled = false;
+                });
+        });
+        
+        function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        let allJsonData = [];
+                        workbook.SheetNames.forEach(sheetName => {
+                            const worksheet = workbook.Sheets[sheetName];
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                            if (jsonData.length > 0) {
+                                allJsonData = allJsonData.concat(jsonData);
+                            }
+                        });
+                        resolve(allJsonData);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        function parsePercent(value) {
+            if (typeof value === 'string') {
+                const cleanValue = value.replace(/[%\s]/g, '');
+                const num = parseFloat(cleanValue);
+                if (isNaN(num)) return 0;
+                if (num >= 1) return num / 100;
+                return num;
+            }
+            if (typeof value === 'number') {
+                if (value >= 1) return value / 100;
+                return value;
+            }
+            return 0;
+        }
+        
+        const COEFFICIENTS = {
+            '淘天-正向': { sr: 1.0, diss: 1.00, fcr: 1.17, resp: 1.00 },
+            '菜鸟-七星潭': { sr: 1.0, diss: 1.00, fcr: 1.19, resp: 1.00 },
+            '逍遥峰-KS': { sr: 1.0, diss: 0.56, fcr: 1.25, resp: 1.00 },
+            '小红书-Red': { sr: 1.03, diss: 1.00, fcr: 1.16, resp: 1.00 },
+            '极地湾-JD': { sr: 1.00, diss: 0.82, fcr: 1.02, resp: 1.00 },
+            '紫金山-逆向': { sr: 1.00, diss: 0.96, fcr: 1.05, resp: 1.00 },
+            '抖音-紫金山': { sr: 1.02, diss: 1.00, fcr: 1.05, resp: 1.00 },
+            '桃花岛-逆向': { sr: 1.03, diss: 0.34, fcr: 1.08, resp: 1.00 },
+            '桃花岛-正向': { sr: 1.00, diss: 0.94, fcr: 1.03, resp: 1.00 },
+            'CaiNiao群聊': { sr: 1.01, diss: 0.47, fcr: 1.00, resp: 1.00 },
+            '访客': { sr: 1.00, diss: 1.00, fcr: 1.38, resp: 1.00 },
+            '微信小店-正向': { sr: 1.00, diss: 1.00, fcr: 1.00, resp: 1.00 },
+            '微信小店-逆向': { sr: 1.00, diss: 1.00, fcr: 1.00, resp: 1.00 },
+            '百度优选': { sr: 1.00, diss: 1.00, fcr: 1.00, resp: 1.00 }
+        };
+        
+        const SPECIAL_CHANNELS = ['淘天-正向', '菜鸟-七星潭', '逍遥峰-KS'];
+        
+        function calcSuccessRateScore(value, isSpecial) {
+            if (isSpecial) return 0;
+            if (value < 0.90) return 0;
+            if (value >= 0.96) return 5;
+            return Math.round((value - 0.90) / 0.06 * 5 * 100) / 100;
+        }
+        
+        function calcResponseRateScore(value) {
+            if (value < 0.60) return 0;
+            if (value >= 0.85) return 5;
+            return Math.round((value - 0.60) / 0.25 * 5 * 100) / 100;
+        }
+        
+        function calcDissatisfactionScore(value) {
+            if (value > 0.30) return 0;
+            if (value <= 0.15) return 60;
+            return Math.round((0.30 - value) / 0.15 * 60 * 100) / 100;
+        }
+        
+        function calcFcrScore(value, isSpecial) {
+            const maxScore = isSpecial ? 15 : 10;
+            if (value < 0.60) return 0;
+            if (value >= 0.75) return maxScore;
+            return Math.round((value - 0.60) / 0.15 * maxScore * 100) / 100;
+        }
+        
+        const VISITOR_SUBCHANNELS = ['支付宝小程序', '百度小程序', '官网', '微信'];
+        
+        const SUPPLIER_ALIASES = {
+            '江苏点度科技有限公司': '点度',
+            '陕西金易化成电子商务有限公司': '金易化成',
+            '上海泉速信息技术有限公司': '泉速',
+            '河北最优解信息科技有限公司': '光维'
+        };
+        
+        function getSupplierAlias(name) {
+            return SUPPLIER_ALIASES[name] || name;
+        }
+        
+        function processData(data) {
+            const channelMap = {};
+            const visitorSubChannelMap = {};
+            let lastValidRow = null;
+            
+            data.forEach(row => {
+                const date = String(row['日期'] || '').trim();
+                const rawChannel = String(row['渠道'] || row['技能组名称'] || '').trim().replace(/[\n\r]+/g, '');
+                const rawServiceProvider = String(row['服务商'] || row['服务商名称'] || '').trim();
+                
+                let provider = rawServiceProvider;
+                if (!provider && lastValidRow) {
+                    provider = String(lastValidRow['服务商'] || lastValidRow['服务商名称'] || '').trim();
+                }
+                
+                if (rawChannel === '') return;
+                
+                if (VISITOR_SUBCHANNELS.includes(rawChannel)) {
+                    if (!provider) return;
+                    
+                    const key = `${provider}_${rawChannel}`;
+                    if (!visitorSubChannelMap[key]) {
+                        visitorSubChannelMap[key] = {
+                            provider,
+                            rawChannel,
+                            totalIncoming: 0,
+                            totalSuccess: 0,
+                            respSum: 0,
+                            dissSum: 0,
+                            fcrSum: 0
+                        };
+                    }
+                    
+                    const incoming = parseFloat(row['进线量']) || 0;
+                    const success = parseFloat(row['成功接待量']) || 0;
+                    
+                    visitorSubChannelMap[key].totalIncoming += incoming;
+                    visitorSubChannelMap[key].totalSuccess += success;
+                    visitorSubChannelMap[key].respSum += parsePercent(row['30s响应率']) * incoming;
+                    visitorSubChannelMap[key].dissSum += parsePercent(row['不满意率']) * incoming;
+                    visitorSubChannelMap[key].fcrSum += parsePercent(row['72HFCR']) * incoming;
+                    
+                    lastValidRow = row;
+                    return;
+                }
+                
+                lastValidRow = row;
+                
+                if (!provider) return;
+                
+                const key = `${provider}_${rawChannel}`;
+                if (!channelMap[key]) {
+                    channelMap[key] = {
+                        provider,
+                        rawChannel,
+                        sr: 0,
+                        resp: 0,
+                        diss: 0,
+                        fcr: 0,
+                        rowCount: 0,
+                        totalIncoming: 0,
+                        totalSuccess: 0
+                    };
+                }
+                
+                const incoming = parseFloat(row['进线量']) || 0;
+                const success = parseFloat(row['成功接待量']) || 0;
+                
+                channelMap[key].totalIncoming += incoming;
+                channelMap[key].totalSuccess += success;
+                channelMap[key].resp += parsePercent(row['30s响应率'] || row['响应率']) * incoming;
+                channelMap[key].diss += parsePercent(row['不满意率']) * incoming;
+                channelMap[key].fcr += parsePercent(row['72HFCR'] || row['FCR']) * incoming;
+                channelMap[key].rowCount += incoming;
+            });
+            
+            const visitorProviderMap = {};
+            for (const [key, data] of Object.entries(visitorSubChannelMap)) {
+                if (!visitorProviderMap[data.provider]) {
+                    visitorProviderMap[data.provider] = {
+                        totalIncoming: 0,
+                        totalSuccess: 0,
+                        respSum: 0,
+                        dissSum: 0,
+                        fcrSum: 0
+                    };
+                }
+                visitorProviderMap[data.provider].totalIncoming += data.totalIncoming;
+                visitorProviderMap[data.provider].totalSuccess += data.totalSuccess;
+                visitorProviderMap[data.provider].respSum += data.respSum;
+                visitorProviderMap[data.provider].dissSum += data.dissSum;
+                visitorProviderMap[data.provider].fcrSum += data.fcrSum;
+            }
+            
+            for (const [provider, data] of Object.entries(visitorProviderMap)) {
+                const key = `${provider}_访客`;
+                channelMap[key] = {
+                    provider,
+                    rawChannel: '访客',
+                    sr: data.totalIncoming > 0 ? data.totalSuccess / data.totalIncoming : 0,
+                    resp: data.totalIncoming > 0 ? data.respSum / data.totalIncoming : 0,
+                    diss: data.totalIncoming > 0 ? data.dissSum / data.totalIncoming : 0,
+                    fcr: data.totalIncoming > 0 ? data.fcrSum / data.totalIncoming : 0,
+                    rowCount: 1
+                };
+            }
+            
+            const results = [];
+            
+            for (const [key, data] of Object.entries(channelMap)) {
+                let channel = data.rawChannel;
+                
+                if (channel === '微信' || channel === '官网') {
+                    channel = '访客';
+                } else if (channel.includes('KS')) {
+                    channel = '逍遥峰-KS';
+                } else if (channel.includes('紫金山') && channel.includes('正向')) {
+                    channel = '抖音-紫金山';
+                } else if (channel.includes('紫金山') && channel.includes('逆向')) {
+                    channel = '紫金山-逆向';
+                } else if (channel.includes('桃花岛') && channel.includes('正向')) {
+                    channel = '桃花岛-正向';
+                } else if (channel.includes('桃花岛') && channel.includes('逆向')) {
+                    channel = '桃花岛-逆向';
+                } else if (channel.includes('淘天')) {
+                    channel = '淘天-正向';
+                } else if (channel.includes('七星潭')) {
+                    channel = '菜鸟-七星潭';
+                } else if (channel.includes('CaiNiao') || channel.includes('菜鸟群聊')) {
+                    channel = 'CaiNiao群聊';
+                } else if (channel.includes('小红书')) {
+                    channel = '小红书-Red';
+                } else if (channel.includes('JD') || channel.includes('京东')) {
+                    channel = '极地湾-JD';
+                } else if (channel.includes('百度优选')) {
+                    channel = '百度优选';
+                } else if (channel.includes('微信小店')) {
+                    channel = channel.includes('正向') ? '微信小店-正向' : '微信小店-逆向';
+                }
+                
+                const coeff = COEFFICIENTS[channel] || { sr: 1.0, diss: 1.00, fcr: 1.00, resp: 1.00 };
+                const isSpecial = SPECIAL_CHANNELS.includes(channel);
+                
+                let srOriginal, respOriginal, dissOriginal, fcrOriginal;
+                
+                if (data.rowCount === 1) {
+                    srOriginal = data.sr;
+                    respOriginal = data.resp;
+                    dissOriginal = data.diss;
+                    fcrOriginal = data.fcr;
+                } else {
+                    srOriginal = data.totalIncoming > 0 ? data.totalSuccess / data.totalIncoming : 0;
+                    respOriginal = data.rowCount > 0 ? data.resp / data.rowCount : 0;
+                    dissOriginal = data.rowCount > 0 ? data.diss / data.rowCount : 0;
+                    fcrOriginal = data.rowCount > 0 ? data.fcr / data.rowCount : 0;
+                }
+                
+                const srWeighted = srOriginal * coeff.sr;
+                const dissWeighted = dissOriginal * coeff.diss;
+                const fcrWeighted = fcrOriginal * coeff.fcr;
+                
+                const srScore = calcSuccessRateScore(srWeighted, isSpecial);
+                const respScore = calcResponseRateScore(respOriginal);
+                const dissScore = calcDissatisfactionScore(dissWeighted);
+                const fcrScore = calcFcrScore(fcrWeighted, isSpecial);
+                const qualityScore = 20;
+                
+                const totalScore = Math.round((srScore + respScore + dissScore + fcrScore + qualityScore) * 100) / 100;
+                const settlementRatio = totalScore >= 85 ? 100 : totalScore;
+                
+                let channelType = 'normal';
+                if (isSpecial) channelType = 'special';
+                else if (channel === '访客') channelType = 'visitor';
+                
+                results.push({
+                    serviceProvider: data.provider,
+                    channel,
+                    channelType,
+                    srOriginal: (srOriginal * 100).toFixed(2),
+                    srWeighted: (srWeighted * 100).toFixed(2),
+                    srScore,
+                    respOriginal: (respOriginal * 100).toFixed(2),
+                    respScore,
+                    dissOriginal: (dissOriginal * 100).toFixed(2),
+                    dissWeighted: (dissWeighted * 100).toFixed(2),
+                    dissScore,
+                    fcrOriginal: (fcrOriginal * 100).toFixed(2),
+                    fcrWeighted: (fcrWeighted * 100).toFixed(2),
+                    fcrScore,
+                    qualityScore,
+                    totalScore,
+                    settlementRatio: settlementRatio.toFixed(2)
+                });
+            }
+            
+            allResults = results;
+            displayResults(results);
+        }
+        
+        function displayResults(results) {
+            const supplierMap = {};
+            results.forEach(r => {
+                if (!supplierMap[r.serviceProvider]) {
+                    supplierMap[r.serviceProvider] = { name: r.serviceProvider, channels: [], scores: [], qualifiedCount: 0 };
+                }
+                supplierMap[r.serviceProvider].channels.push(r);
+                supplierMap[r.serviceProvider].scores.push(r.totalScore);
+                if (r.totalScore >= 85) supplierMap[r.serviceProvider].qualifiedCount++;
+            });
+            
+            const supplierList = Object.values(supplierMap).map(s => ({
+                ...s,
+                avgScore: s.scores.reduce((a, b) => a + b, 0) / s.scores.length,
+                maxScore: Math.max(...s.scores),
+                minScore: Math.min(...s.scores),
+                qualifiedRate: s.scores.length > 0 ? (s.qualifiedCount / s.scores.length * 100).toFixed(0) : 0
+            })).sort((a, b) => b.avgScore - a.avgScore);
+            
+            const supplierRankMap = {};
+            supplierList.forEach((s, index) => {
+                supplierRankMap[s.name] = index + 1;
+            });
+            
+            const sortedResults = [];
+            supplierList.forEach(supplier => {
+                sortedResults.push(...supplier.channels);
+            });
+            
+            document.getElementById('totalSuppliers').textContent = supplierList.length;
+            document.getElementById('avgScore').textContent = sortedResults.length > 0 
+                ? (sortedResults.reduce((a, b) => a + b.totalScore, 0) / sortedResults.length).toFixed(2) 
+                : '0.00';
+            
+            let tableHtml = '';
+            let currentSupplier = '';
+            sortedResults.forEach((r, index) => {
+                const alias = getSupplierAlias(r.serviceProvider);
+                const avgScore = supplierMap[r.serviceProvider].scores.reduce((a, b) => a + b, 0) / supplierMap[r.serviceProvider].scores.length;
+                const rank = supplierRankMap[r.serviceProvider];
+                
+                let scoreClass = 'score-high';
+                if (r.totalScore < 80) scoreClass = 'score-low';
+                else if (r.totalScore < 85) scoreClass = 'score-medium';
+                
+                let tagClass = 'normal';
+                let tagText = '常规';
+                if (r.channelType === 'special') { tagClass = 'special'; tagText = '特殊'; }
+                else if (r.channelType === 'visitor') { tagClass = 'visitor'; tagText = '访客'; }
+                
+                let supplierDisplay = '';
+                let rankDisplay = '';
+                let avgScoreDisplay = '';
+                
+                if (r.serviceProvider !== currentSupplier) {
+                    supplierDisplay = alias;
+                    rankDisplay = rank;
+                    avgScoreDisplay = avgScore.toFixed(2);
+                    currentSupplier = r.serviceProvider;
+                }
+                
+                tableHtml += `<tr>
+                    <td>${supplierDisplay}</td>
+                    <td>${r.channel}</td>
+                    <td><span class="channel-tag ${tagClass}">${tagText}</span></td>
+                    <td>${r.srOriginal}%</td>
+                    <td>${r.srWeighted}%</td>
+                    <td>${r.srScore.toFixed(2)}</td>
+                    <td>${r.respOriginal}%</td>
+                    <td>${r.respScore.toFixed(2)}</td>
+                    <td>${r.dissOriginal}%</td>
+                    <td>${r.dissWeighted}%</td>
+                    <td>${r.dissScore.toFixed(2)}</td>
+                    <td>${r.fcrOriginal}%</td>
+                    <td>${r.fcrWeighted}%</td>
+                    <td>${r.fcrScore.toFixed(2)}</td>
+                    <td>${r.qualityScore}</td>
+                    <td class="${scoreClass}">${r.totalScore.toFixed(2)}</td>
+                    <td>${avgScoreDisplay}</td>
+                    <td>${rankDisplay}</td>
+                </tr>`;
+            });
+            resultsBody.innerHTML = tableHtml;
+            
+            let summaryHtml = '';
+            supplierList.forEach((s, index) => {
+                const alias = getSupplierAlias(s.name);
+                summaryHtml += `<tr>
+                    <td>${index + 1}</td>
+                    <td>${alias}</td>
+                    <td>${s.channels.length}</td>
+                    <td class="${s.avgScore >= 85 ? 'score-high' : s.avgScore >= 80 ? 'score-medium' : 'score-low'}">${s.avgScore.toFixed(2)}</td>
+                    <td>${s.maxScore.toFixed(2)}</td>
+                    <td>${s.minScore.toFixed(2)}</td>
+                    <td>${s.qualifiedRate}%</td>
+                </tr>`;
+            });
+            summaryBody.innerHTML = summaryHtml;
+            
+            resultsSection.style.display = 'block';
+            window.scrollTo({ top: resultsSection.offsetTop - 120, behavior: 'smooth' });
+        }
+        
+        function showRules() { rulesModal.style.display = 'flex'; }
+        function closeRules() { rulesModal.style.display = 'none'; }
+        rulesModal.addEventListener('click', (e) => { if (e.target === rulesModal) closeRules(); });
+    </script>
+</body>
+</html>
